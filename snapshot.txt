@@ -1,0 +1,25 @@
+Welcome to kmOSÿ
+
+kernel /boot/kernel.elf
+   [Multiboot-elf, <0x100000:0x66c:0x0>, <0x101000:0x10:0x1ff0>, shtab=0x103208
+, entry=0x100474]
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

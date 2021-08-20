@@ -1,5 +1,5 @@
     default=0
     timeout=0
 
-    title kmOS
+    title os
     kernel /boot/kernel.elf

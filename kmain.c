@@ -7,7 +7,7 @@
 #include "multiboot.h"
 
 /* Function to initialize */
-void init() {
+void init(u32int kernelPhysicalStart, u32int kernelPhysicalEnd) {
   /* Initialize segment descriptor tables */
   init_gdt();
 
@@ -17,35 +17,29 @@ void init() {
   /* Initialize timer interrupt */
 //  init_timer(TIMER_FREQUENCY);
 
-  /* Initialize serial port */
+  /* Initialize display */
+  init_display();
+
+  /* Configure serial port */
   serial_configure(SERIAL_COM1_BASE, Baud_115200);
+
+  /* Initialize paging */
+  init_paging(kernelPhysicalStart, kernelPhysicalEnd);
+
+  /* Initialize keyboard */
+  init_keyboard();
 }
 
 /* Kernel Main */
-s32int kmain(unsigned int ebx) {
-  init();
-  multiboot_info_t *mbinfo = (multiboot_info_t *) ebx;
-  	multiboot_module_t* modules = (multiboot_module_t*) mbinfo->mods_addr; 
-  	unsigned int address_of_module = modules->mod_start;
-  	
-  	if((mbinfo->mods_count) == 1){
-  		char message[] = "ONE module loaded successfully!";
-  		serial_write(0x3F8,message,sizeof(message));
-  		
-  		typedef void (*call_module_t)(void);
-        	/* ... */
-        	call_module_t start_program = (call_module_t) address_of_module;
-        	start_program();
-        	/* we'll never get here, unless the module code returns */
+/* GRUB stores a pointer to a struct in the register ebx that,
+ * describes at which addresses the modules are loaded.
+ */
+s32int kmain(u32int kernelPhysicalStart, u32int kernelPhysicalEnd) {
+  // Initialize all modules
+  init(kernelPhysicalStart, kernelPhysicalEnd);
 
-  	}else{
-  		char message[] = "Error: More than ONE module loaded";
-  		serial_write(0x3F8,message,sizeof(message));
-  	}
-  s8int buffer[20] = "This works!!!!!!!\n";
-  print_screen(buffer, 20);
-  print_serial(buffer, 20);
-  asm volatile("int $0x3");
-  asm volatile("int $0x22");
+  // Run init tests defined in tests.h
+  run_all_tests();
+
   return 0;
 }

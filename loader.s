@@ -1,32 +1,64 @@
-    global loader                   ; the entry symbol for ELF
-    extern kmain   	             ; the function kmain is defined elsewhere
-    
-    KERNEL_STACK_SIZE equ 4096      ; size of stack in bytes
-    			
-    MAGIC_NUMBER equ 0x1BADB002     ; define the magic number constant
-    ALIGN_MODULES equ 0x00000001    ; tell GRUB to align modules
-    CHECKSUM     equ -(MAGIC_NUMBER + ALIGN_MODULES )  
-    				     ; calculate the checksum
-                                    ; (magic number + checksum + flags should equal 0)
-    
-    section .bss
-    align 4                         ; align at 4 bytes
-    kernel_stack:                   ; label points to beginning of memory
-        resb KERNEL_STACK_SIZE      ; reserve stack for the kernel
-    
-        
-    section .text                   ; start of the text (code) section
-    align 4                         ; the code must be 4 byte aligned
-        dd MAGIC_NUMBER             ; write the magic number to the machine code,
-        dd ALIGN_MODULES            ; write the align modules instruction
-        dd CHECKSUM                 ; write the checksum
-    
-    mov esp, kernel_stack + KERNEL_STACK_SIZE       ; point esp to the start of the stack (end of memory area)
-    
-    loader:                         ; the loader label (defined as entry point in linker script)
-	
-    	push ebx                    ; multiboot info in ebx 
-    	call kmain                  ; call the function, the result will be in eax
-	
+; Entry symbol for ELF
+global loader
+
+; size of stack in bytes
+KERNEL_STACK_SIZE equ 4096
+
+;setting up the Multiboot header - see GRUB docs for details
+
+; align loaded modules on page boundaries
+MODULEALIGN equ 1 << 0
+
+; provide memory map
+MEMINFO equ 1 << 1
+
+; this is the Multiboot 'flag' field
+FLAGS equ MODULEALIGN | MEMINFO
+
+; 'magic number' lets bootloader find the header
+MAGIC_NUMBER equ 0x1BADB002
+
+; calculate the checksum (all options + checksum should equal 0)
+CHECKSUM equ - (MAGIC_NUMBER + FLAGS)
+
+; Kernel Start Physical Address is exported from linker script
+extern KERNEL_PHYSICAL_START
+
+; Kernel End Physical Address is exported from linker script
+extern KERNEL_PHYSICAL_END
+
+; start of the bss section
+section .bss
+; align at 4 bytes
+align 4
+; label points to beginning of memory
+KERNEL_STACK:
+    ; reserve stack for the kernel
+    resb KERNEL_STACK_SIZE
+
+; start of the text (code) section
+section .text
+; Align at 4 bytes
+align 4
+    ; write the magic number to the machine code,
+    dd MAGIC_NUMBER
+    ; the flags,
+    dd FLAGS
+    ; the checksum
+    dd CHECKSUM
+
+; the loader label (defined as entry point in linker script)
+loader:
+    ; point esp to the start of the stack (end of memory area)
+    mov esp, KERNEL_STACK + KERNEL_STACK_SIZE
+    ; kmain function is defined elsewhere
+    extern kmain
+    ; the kernel end address
+    push $KERNEL_PHYSICAL_END
+    ; and the kernel start address
+    push $KERNEL_PHYSICAL_START
+    ; call kernel main function.
+    call kmain
     .loop:
-        jmp .loop                   ; loop forever
+    ; loop forever
+      jmp .loop

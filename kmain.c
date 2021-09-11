@@ -7,7 +7,7 @@
 #include "multiboot.h"
 
 /* Function to initialize */
-void init(u32int kernelPhysicalStart, u32int kernelPhysicalEnd) {
+void init(u32int kernelPhysicalStart, u32int kernelPhysicalEnd,u32int kernel_virtual_end ,u32int kernel_virtual_start) {
   /* Initialize segment descriptor tables */
   init_gdt();
 
@@ -24,21 +24,18 @@ void init(u32int kernelPhysicalStart, u32int kernelPhysicalEnd) {
   serial_configure(SERIAL_COM1_BASE, Baud_115200);
 
   /* Initialize paging */
-  init_paging(kernelPhysicalStart, kernelPhysicalEnd);
+  init_paging(kernelPhysicalStart, kernelPhysicalEnd ,kernel_virtual_end ,kernel_virtual_start);
 
   /* Initialize keyboard */
   init_keyboard();
 }
 
-/* Kernel Main */
-/* GRUB stores a pointer to a struct in the register ebx that,
- * describes at which addresses the modules are loaded.
- */
-s32int kmain(u32int kernelPhysicalStart, u32int kernelPhysicalEnd) {
-  // Initialize all modules
-  init(kernelPhysicalStart, kernelPhysicalEnd);
 
-  // Run init tests defined in tests.h
+s32int kmain(u32int kernelPhysicalStart, u32int kernelPhysicalEnd,u32int kernel_virtual_end ,u32int kernel_virtual_start) {
+
+  init(kernelPhysicalStart, kernelPhysicalEnd,kernel_virtual_end ,kernel_virtual_start);
+
+ 
   run_all_tests();
 
   return 0;
